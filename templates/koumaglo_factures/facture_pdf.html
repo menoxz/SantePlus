@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ facture.code_facture }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0D9488;
+        }
+        .facture-info {
+            text-align: right;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #0D9488;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #0D9488;
+        }
+        .client-info {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-block {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 5px;
+            width: 48%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f1f1f1;
+            text-align: left;
+            padding: 10px;
+        }
+        td {
+            padding: 10px;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f1f1f1;
+        }
+        .total-value {
+            text-align: right;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            text-align: center;
+            color: #777;
+        }
+        .payment-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .paid {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .unpaid {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .partial {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span style="color: #0D9488; font-size: 32px; font-weight: bold; display: inline-block; margin-right: 10px; border-bottom: 3px solid #0D9488; padding-bottom: 5px;">SantePlus</span>
+            </div>
+            <div class="facture-info">
+                <p><strong>Facture N°:</strong> {{ facture.code_facture }}</p>
+                <p><strong>Date d'émission:</strong> {{ facture.date_enreg_facture|date:"d/m/Y" }}</p>
+                <p><strong>Type:</strong> {{ facture.type_facture|title }}</p>
+            </div>
+        </div>
+
+        <div class="title">FACTURE</div>
+
+        <div class="client-info">
+            <div class="info-block">
+                <p><strong>Patient:</strong></p>
+                <p>{{ facture.consultation.patient.personne.nom }} {{ facture.consultation.patient.personne.prenom }}</p>
+                <p>Code: {{ facture.consultation.patient.personne.code }}</p>
+            </div>
+            <div class="info-block">
+                <p><strong>Médecin traitant:</strong></p>
+                <p>{{ facture.medecin.titre_medecin }} {{ facture.medecin.personne.nom }} {{ facture.medecin.personne.prenom }}</p>
+                {% if facture.medecin.specialites.all %}
+                    <p>Spécialité(s): 
+                    {% for affectation in facture.medecin.affecterspecialite_set.all %}
+                        {% if affectation.actif %}
+                            {{ affectation.specialite.libelle }}{% if not forloop.last %}, {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="subtitle">Détails de la consultation</div>
+        <p><strong>Code consultation:</strong> {{ facture.consultation.code_consultation }}</p>
+        <p><strong>Date de consultation:</strong> {{ facture.consultation.date_consultation|date:"d/m/Y H:i" }}</p>
+
+        <div class="subtitle">Actes médicaux</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Libellé</th>
+                    <th>Type d'acte</th>
+                    <th>Montant (FCFA)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in facture.details.all %}
+                    <tr>
+                        <td>{{ detail.acte.code_acte }}</td>
+                        <td>{{ detail.acte.libelle_acte }}</td>
+                        <td>{{ detail.acte.type_acte.libelle }}</td>
+                        <td class="total-value">{{ detail.montant_facture_detail }} FCFA</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td class="total-value">{{ facture.montant_facture }} FCFA</td>
+                </tr>
+            </tbody>
+        </table>
+
+        {% if facture.paiements.all %}
+            <div class="subtitle">Historique des paiements</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Montant (FCFA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paiement in facture.paiements.all %}
+                        <tr>
+                            <td>{{ paiement.paymentDate|date:"d/m/Y H:i" }}</td>
+                            <td class="total-value">{{ paiement.amount }} FCFA</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if facture.date_paiement_facture %}
+            <div class="payment-status paid">FACTURE PAYÉE</div>
+        {% elif montant_paye > 0 %}
+            <div class="payment-status partial">
+                PAIEMENT PARTIEL<br>
+                Payé: {{ montant_paye }} FCFA | Reste à payer: {{ montant_restant }} FCFA
+            </div>
+        {% else %}
+            <div class="payment-status unpaid">
+                FACTURE NON PAYÉE<br>
+                Montant dû: {{ facture.montant_facture }} FCFA
+            </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>SantePlus - Clinique Médicale</p>
+            <p>Adresse: 123 Avenue de la Santé, Lomé, Togo</p>
+            <p>Téléphone: +228 99 99 99 99 | Email: contact@santeplus.com</p>
+            <p>© {% now "Y" %} SantePlus. Tous droits réservés.</p>
+        </div>
+    </div>
+</body>
+</html>

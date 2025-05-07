@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if mode == 'ajouter' %}Ajouter une Ordonnance{% else %}Modifier une Ordonnance{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-8">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
+        <!-- Titre principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 flex items-center">
+            <svg class="w-8 h-8 mr-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            {% if mode == 'ajouter' %}Ajouter une Ordonnance{% else %}Modifier une Ordonnance{% endif %}
+            {% if consultation %}
+                pour la consultation {{ consultation.code_consultation }}
+            {% endif %}
+        </h1>
+
+        <!-- Détails de la Consultation -->
+        {% if consultation %}
+            <div class="mb-6 bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Détails de la Consultation
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p><span class="font-medium text-gray-700">Patient :</span> {{ consultation.patient.personne.nom }} {{ consultation.patient.personne.prenom }}</p>
+                        <p><span class="font-medium text-gray-700">Date :</span> {{ consultation.date_consultation|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <p><span class="font-medium text-gray-700">Médecin :</span> {{ consultation.medecin.titre_medecin }} {{ consultation.medecin.personne.nom }}</p>
+                        <p><span class="font-medium text-gray-700">Fin validité :</span> {{ consultation.date_fin_validite_consultation|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Formulaire -->
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+
+            <!-- Messages d'erreur -->
+            {% if form.errors or formset.errors %}
+                <div class="p-4 bg-red-100 text-red-700 rounded-lg">
+                    <p class="font-bold flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Veuillez corriger les erreurs suivantes :
+                    </p>
+                    <ul class="list-disc list-inside mt-2">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }} : {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for formset_form in formset %}
+                            {% for field in formset_form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }} : {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Informations de l'ordonnance -->
+            <div class="border-b border-gray-200 pb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    Informations de l'Ordonnance
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.code_ordonnance.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.code_ordonnance.label }}
+                        </label>
+                        <input type="text" 
+                               name="{{ form.code_ordonnance.name }}" 
+                               id="{{ form.code_ordonnance.id_for_label }}" 
+                               value="{{ form.code_ordonnance.value|default:'' }}" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 {% if form.code_ordonnance.errors %}border-red-500{% endif %}"
+                               placeholder="Entrez le code de l'ordonnance">
+                        {% if form.code_ordonnance.help_text %}
+                            <p class="text-xs text-gray-500 mt-1">{{ form.code_ordonnance.help_text }}</p>
+                        {% endif %}
+                        {% if form.code_ordonnance.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ form.code_ordonnance.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.date_ordonnance.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.date_ordonnance.label }}
+                        </label>
+                        <input type="datetime-local" 
+                               name="{{ form.date_ordonnance.name }}" 
+                               id="{{ form.date_ordonnance.id_for_label }}" 
+                               value="{{ form.date_ordonnance.value|date:'Y-m-d\TH:i'|default:'' }}" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 {% if form.date_ordonnance.errors %}border-red-500{% endif %}">
+                        {% if form.date_ordonnance.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ form.date_ordonnance.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Médicaments prescrits -->
+            <div class="border-b border-gray-200 pb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h-2m-2 0H7m10 0H5"></path>
+                    </svg>
+                    Médicaments Prescrits
+                </h2>
+                <!-- Spécialités -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Médicaments prescrits
+                    </label>
+                    
+                    {{ formset.management_form }}
+                    <div id="medicament-forms">
+                        {% for medicament_form in formset %}
+                            <div class="medicament-form border rounded-lg p-4 mb-4 {% if forloop.first %}first-form{% endif %}">
+                                {% if not forloop.first %}
+                                    <div class="flex justify-end">
+                                        <button type="button" 
+                                                class="remove-form inline-flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-sm transition duration-300 {% if forloop.first %}hidden{% endif %}">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                {% endif %}
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                                    <div class="hidden">
+                                        {{ medicament_form.id }}
+                                        {{ medicament_form.DELETE }}
+                                    </div>
+                                    <div>
+                                        <label for="{{ medicament_form.code_ordonnance_detail.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                            {{ medicament_form.code_ordonnance_detail.label }}
+                                        </label>
+                                        {{ medicament_form.code_ordonnance_detail }}
+                                        {% if medicament_form.code_ordonnance_detail.help_text %}
+                                            <p class="text-xs text-gray-500 mt-1">{{ medicament_form.code_ordonnance_detail.help_text }}</p>
+                                        {% endif %}
+                                        {% if medicament_form.code_ordonnance_detail.errors %}
+                                            <p class="text-red-600 text-sm mt-1">{{ medicament_form.code_ordonnance_detail.errors.0 }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <label for="{{ medicament_form.medicament.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                            {{ medicament_form.medicament.label }}
+                                        </label>
+                                        {{ medicament_form.medicament }}
+                                        {% if medicament_form.medicament.errors %}
+                                            <p class="text-red-600 text-sm mt-1">{{ medicament_form.medicament.errors.0 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="{{ medicament_form.posologie_medicament.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                        {{ medicament_form.posologie_medicament.label }}
+                                    </label>
+                                    {{ medicament_form.posologie_medicament }}
+                                    {% if medicament_form.posologie_medicament.errors %}
+                                        <p class="text-red-600 text-sm mt-1">{{ medicament_form.posologie_medicament.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4">
+                        <button type="button" 
+                                id="add-medicament" 
+                                class="inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Ajouter un Médicament
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex justify-end space-x-4">
+                {% if consultation %}
+                    <a href="{% url 'koumaglo_consultations:consultation_detail' pk=consultation.pk %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Annuler
+                    </a>
+                {% else %}
+                    <a href="{% url 'koumaglo_ordonnances:ordonnance_list' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Annuler
+                    </a>
+                {% endif %}
+                <button type="submit" 
+                        class="inline-flex items-center px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addMedicamentButton = document.getElementById('add-medicament');
+        const medicamentForms = document.getElementById('medicament-forms');
+        const totalFormInput = document.querySelector('input[name="form-TOTAL_FORMS"]');
+        const initialForms = document.querySelector('input[name="form-INITIAL_FORMS"]');
+        
+        // Fonction pour initialiser Select2 sur un élément
+        function initSelect2(element) {
+            $(element).select2({
+                language: 'fr',
+                placeholder: 'Rechercher un médicament...',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        
+        // Initialiser Select2 sur les champs existants
+        $('.select2-field').each(function() {
+            initSelect2(this);
+        });
+        
+        // Fonction pour mettre à jour les indices des formulaires ajoutés dynamiquement
+        function updateFormIndices() {
+            const forms = medicamentForms.querySelectorAll('.medicament-form');
+            forms.forEach((form, index) => {
+                // Mettre à jour les attributs des champs de formulaire
+                form.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name) {
+                        field.name = field.name.replace(/form-\d+/, `form-${index}`);
+                        field.id = field.id.replace(/form-\d+/, `form-${index}`);
+                    }
+                });
+                
+                // Mettre à jour les attributs des labels
+                form.querySelectorAll('label').forEach(label => {
+                    if (label.htmlFor) {
+                        label.htmlFor = label.htmlFor.replace(/form-\d+/, `form-${index}`);
+                    }
+                });
+                
+                // Bouton de suppression
+                const removeButton = form.querySelector('.remove-form');
+                if (removeButton) {
+                    if (index === 0) {
+                        removeButton.classList.add('hidden');
+                    } else {
+                        removeButton.classList.remove('hidden');
+                    }
+                }
+            });
+            
+            // Mettre à jour le total de formulaires
+            totalFormInput.value = forms.length;
+        }
+        
+        // Ajouter un nouveau formulaire de médicament
+        addMedicamentButton.addEventListener('click', function() {
+            const formCount = parseInt(totalFormInput.value);
+            const firstForm = medicamentForms.querySelector('.first-form');
+            
+            // Cloner le premier formulaire (qui sert de template)
+            const newForm = firstForm.cloneNode(true);
+            newForm.classList.remove('first-form');
+            
+            // Réinitialiser les valeurs des champs
+            newForm.querySelectorAll('input[type="text"], textarea').forEach(field => {
+                field.value = '';
+            });
+
+            // Mettre à jour les noms et IDs pour refléter le nouveau formset index
+            newForm.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.name) {
+                    field.name = field.name.replace(/form-0/, `form-${formCount}`);
+                    field.id = field.id.replace(/form-0/, `form-${formCount}`);
+                }
+            });
+            
+            // Mettre à jour les attributs des labels
+            newForm.querySelectorAll('label').forEach(label => {
+                if (label.htmlFor) {
+                    label.htmlFor = label.htmlFor.replace(/form-0/, `form-${formCount}`);
+                }
+            });
+            
+            // Réinitialiser les selects
+            newForm.querySelectorAll('select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            // S'assurer que le bouton de suppression est visible
+            const removeButton = newForm.querySelector('.remove-form');
+            if (removeButton) {
+                removeButton.classList.remove('hidden');
+            }
+            
+            // Ajouter le nouveau formulaire
+            medicamentForms.appendChild(newForm);
+            
+            // Mettre à jour le total de formulaires
+            totalFormInput.value = formCount + 1;
+            
+            // Détruire les anciens Select2 avant de les réinitialiser
+            newForm.querySelectorAll('.select2-hidden-accessible').forEach(function(el) {
+                $(el).select2('destroy');
+            });
+            
+            // Réinitialiser Select2 sur le nouveau formulaire
+            newForm.querySelectorAll('.select2-field').forEach(function(el) {
+                initSelect2(el);
+            });
+        });
+        
+        // Supprimer un formulaire de médicament
+        medicamentForms.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-form') || e.target.closest('.remove-form')) {
+                const form = e.target.closest('.medicament-form');
+                
+                // Si le formulaire a un id (donc déjà en base), marquer pour suppression
+                const idInput = form.querySelector('input[id$="-id"]');
+                if (idInput && idInput.value) {
+                    const deleteInputId = idInput.id.replace('-id', '-DELETE');
+                    const deleteInput = document.getElementById(deleteInputId);
+                    if (deleteInput) {
+                        deleteInput.value = 'on';
+                        form.style.display = 'none';
+                    }
+                } else {
+                    // Sinon, supprimer complètement du DOM
+                    form.remove();
+                }
+                
+                updateFormIndices();
+            }
+        });
+    });
+</script>
+{% endblock %}

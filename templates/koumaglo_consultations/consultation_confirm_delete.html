@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Supprimer une Consultation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-red-600">Supprimer une Consultation</h1>
+        
+        <div class="mb-6">
+            <p class="text-gray-700 mb-4">Êtes-vous sûr de vouloir supprimer la consultation suivante ?</p>
+            
+            <div class="bg-gray-100 p-4 rounded-md mb-4">
+                <div class="mb-2">
+                    <span class="font-semibold">Code:</span>
+                    <span>{{ consultation.code_consultation }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="font-semibold">Date:</span>
+                    <span>{{ consultation.date_consultation|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="font-semibold">Patient:</span>
+                    <span>{{ consultation.patient.personne.nom }} {{ consultation.patient.personne.prenom }}</span>
+                </div>
+                <div>
+                    <span class="font-semibold">Médecin:</span>
+                    <span>{{ consultation.medecin.titre_medecin }} {{ consultation.medecin.personne.nom }} {{ consultation.medecin.personne.prenom }}</span>
+                </div>
+            </div>
+            
+            <p class="text-red-600 font-semibold">Attention : Cette action ne peut pas être annulée et supprimera également toutes les ordonnances et factures associées.</p>
+        </div>
+        
+        <form method="post" class="flex justify-end">
+            {% csrf_token %}
+            <a href="{% url 'koumaglo_consultations:consultation_list' %}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">
+                Annuler
+            </a>
+            <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Confirmer la suppression
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %} 

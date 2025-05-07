@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Sélection de Consultation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+            <svg class="w-8 h-8 mr-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Créer une nouvelle facture
+        </h1>
+        <a href="{% url 'koumaglo_factures:select_patient' %}" 
+           class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Retour
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <div class="flex items-center mb-6">
+            <div class="w-8 h-8 flex items-center justify-center bg-teal-500 text-white rounded-full font-bold mr-3">2</div>
+            <h2 class="text-xl font-semibold text-gray-800">Étape 2 : Sélectionner une consultation</h2>
+        </div>
+
+        <div class="mb-6 p-4 bg-teal-50 rounded-lg">
+            <h3 class="font-semibold mb-2">Patient sélectionné</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600">Nom: <span class="font-medium text-gray-800">{{ patient.personne.nom }} {{ patient.personne.prenom }}</span></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Code: <span class="font-medium text-gray-800">{{ patient.personne.code }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        {% if form.fields.consultation.queryset.count == 0 %}
+            <div class="p-4 mb-6 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-300">
+                <div class="flex">
+                    <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <p>Ce patient n'a pas de consultations non facturées. Veuillez d'abord créer une consultation pour ce patient.</p>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'koumaglo_consultations:consultation_add' %}" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Créer une consultation
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="{{ form.consultation.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.consultation.label }}</label>
+                        {{ form.consultation }}
+                        {% if form.consultation.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.consultation.help_text }}</p>
+                        {% endif %}
+                        {% if form.consultation.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.consultation.errors }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                        Continuer
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
