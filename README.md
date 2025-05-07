@@ -154,8 +154,8 @@ Ce projet est sous licence [MIT](LICENSE)
 ## 📞 Contact et Support
 
 Pour toute question ou assistance, veuillez contacter:
-- Email: support@santeplus.com
-- Site web: www.santeplus.com
+- Email: jeanlukou@gmail.com
+- Site web: Pas encore disponible
 
 ---
 
