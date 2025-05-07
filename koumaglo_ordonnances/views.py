@@ -36,7 +36,7 @@ def ordonnance_add(request, consultation_id=None):
     
     if request.method == 'POST':
         form = OrdonnanceForm(request.POST)
-        formset = OrdonnanceDetailFormSet(request.POST)
+        formset = OrdonnanceDetailFormSet(request.POST, prefix='medicament')
         
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
@@ -64,7 +64,7 @@ def ordonnance_add(request, consultation_id=None):
         if consultation:
             initial_data = {'consultation': consultation}
         form = OrdonnanceForm(initial=initial_data)
-        formset = OrdonnanceDetailFormSet()
+        formset = OrdonnanceDetailFormSet(prefix='medicament')
     
     context = {
         'form': form,
@@ -81,7 +81,7 @@ def ordonnance_edit(request, pk):
     
     if request.method == 'POST':
         form = OrdonnanceForm(request.POST, instance=ordonnance)
-        formset = OrdonnanceDetailFormSet(request.POST, instance=ordonnance)
+        formset = OrdonnanceDetailFormSet(request.POST, instance=ordonnance, prefix='medicament')
         
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
@@ -96,7 +96,7 @@ def ordonnance_edit(request, pk):
                 messages.error(request, "Erreur dans les détails de l'ordonnance.")
     else:
         form = OrdonnanceForm(instance=ordonnance)
-        formset = OrdonnanceDetailFormSet(instance=ordonnance)
+        formset = OrdonnanceDetailFormSet(instance=ordonnance, prefix='medicament')
     
     context = {
         'form': form,

@@ -12,7 +12,7 @@ from io import BytesIO
 import uuid
 
 from .models import Facture, FactureDetail, Paiement
-from .forms import PatientSelectionForm, ConsultationSelectionForm, FactureForm, PaiementForm
+from .forms import FactureDetailFormSet, PatientSelectionForm, ConsultationSelectionForm, FactureForm, PaiementForm
 from koumaglo_consultations.models import Consultation
 from koumaglo_patients.models import Patient
 from koumaglo_parametres.models import Acte

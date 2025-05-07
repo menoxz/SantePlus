@@ -4,6 +4,14 @@
     {% if mode == 'ajouter' %}Ajouter une Ordonnance{% else %}Modifier une Ordonnance{% endif %}
 {% endblock %}
 
+{% block extra_head %}
+    <!-- Assurez-vous que jQuery et Select2 sont chargés -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/fr.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-6 py-8">
     <div class="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
@@ -129,21 +137,23 @@
                         Médicaments prescrits
                     </label>
                     
-                    {{ formset.management_form }}
+                    <!-- Management form clairement identifié avec un ID pour le JavaScript -->
+                    <div id="medicament-formset-management">
+                        {{ formset.management_form }}
+                    </div>
+
                     <div id="medicament-forms">
                         {% for medicament_form in formset %}
-                            <div class="medicament-form border rounded-lg p-4 mb-4 {% if forloop.first %}first-form{% endif %}">
-                                {% if not forloop.first %}
-                                    <div class="flex justify-end">
-                                        <button type="button" 
-                                                class="remove-form inline-flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-sm transition duration-300 {% if forloop.first %}hidden{% endif %}">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                            Supprimer
-                                        </button>
-                                    </div>
-                                {% endif %}
+                            <div class="medicament-form border rounded-lg p-4 mb-4">
+                                <div class="flex justify-end mb-2">
+                                    <button type="button" 
+                                            class="remove-form inline-flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Supprimer
+                                    </button>
+                                </div>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                                     <div class="hidden">
                                         {{ medicament_form.id }}
@@ -165,7 +175,18 @@
                                         <label for="{{ medicament_form.medicament.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
                                             {{ medicament_form.medicament.label }}
                                         </label>
-                                        {{ medicament_form.medicament }}
+                                        <select name="{{ medicament_form.medicament.html_name }}" 
+                                                id="{{ medicament_form.medicament.id_for_label }}" 
+                                                class="form-control select2-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200">
+                                            <option value="">---------</option>
+                                            {% for choice in medicament_form.medicament.field.choices %}
+                                                {% if choice.0 %}
+                                                    <option value="{{ choice.0 }}" {% if medicament_form.medicament.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                                                        {{ choice.1 }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
                                         {% if medicament_form.medicament.errors %}
                                             <p class="text-red-600 text-sm mt-1">{{ medicament_form.medicament.errors.0 }}</p>
                                         {% endif %}
@@ -231,84 +252,188 @@
     document.addEventListener('DOMContentLoaded', function() {
         const addMedicamentButton = document.getElementById('add-medicament');
         const medicamentForms = document.getElementById('medicament-forms');
-        const totalFormInput = document.querySelector('input[name="form-TOTAL_FORMS"]');
-        const initialForms = document.querySelector('input[name="form-INITIAL_FORMS"]');
+        const formsetManagement = document.getElementById('medicament-formset-management');
+        
+        // Configuration du formset
+        const FORM_PREFIX = 'medicament'; // Préfixe défini dans les vues
+        
+        // Récupérer les éléments du formset avec des sélecteurs ciblés
+        function findFormsetManagementForm() {
+            // Chercher d'abord dans le conteneur dédié
+            if (formsetManagement) {
+                const totalForms = formsetManagement.querySelector(`[name="${FORM_PREFIX}-TOTAL_FORMS"]`);
+                if (totalForms) return totalForms;
+            }
+            
+            // Essayer de trouver directement avec le préfixe
+            const totalFormsByPrefix = document.querySelector(`[name="${FORM_PREFIX}-TOTAL_FORMS"]`) || 
+                                      document.querySelector(`#id_${FORM_PREFIX}-TOTAL_FORMS`);
+            if (totalFormsByPrefix) return totalFormsByPrefix;
+            
+            // Recherche plus générale
+            const totalFormsBySuffix = document.querySelector(`[name$="-TOTAL_FORMS"]`) || 
+                                       document.querySelector(`[id$="-TOTAL_FORMS"]`);
+            if (totalFormsBySuffix) return totalFormsBySuffix;
+            
+            return null;
+        }
+        
+        // Chercher le management form
+        const managementForm = findFormsetManagementForm();
+        
+        // Vérification plus robuste des éléments du formset
+        if (!managementForm) {
+            console.error("Erreur critique: Impossible de trouver l'élément de gestion du formset (TOTAL_FORMS)");
+            
+            // Afficher des informations de débogage
+            console.log("=== DÉBOGAGE FORMSET ===");
+            console.log(`Préfixe recherché: ${FORM_PREFIX}`);
+            console.log("Tous les inputs du document:");
+            document.querySelectorAll('input[type="hidden"]').forEach(input => {
+                console.log(`Input: name="${input.name}", id="${input.id}", type="${input.type}"`);
+            });
+            
+            // Afficher le HTML du management form s'il est rendu
+            if (formsetManagement) {
+                console.log("Contenu du div management-form:", formsetManagement.innerHTML);
+            }
+            
+            alert("Erreur: Impossible de trouver le formulaire de gestion des médicaments. Veuillez contacter le support technique.");
+            return;
+        }
+
+        // Log pour débogage
+        console.log("Formset initialisé avec succès:", managementForm);
+        console.log(`Nom: ${managementForm.name}, Valeur initiale: ${managementForm.value}`);
         
         // Fonction pour initialiser Select2 sur un élément
         function initSelect2(element) {
-            $(element).select2({
-                language: 'fr',
-                placeholder: 'Rechercher un médicament...',
-                allowClear: true,
-                width: '100%'
-            });
+            try {
+                // S'assurer que jQuery et Select2 sont chargés
+                if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
+                    console.error("jQuery ou Select2 n'est pas chargé correctement");
+                    return;
+                }
+                
+                // S'assurer que l'élément est valide
+                if (!element || element.tagName !== 'SELECT') {
+                    console.error("L'élément n'est pas un SELECT valide:", element);
+                    return;
+                }
+                
+                // Détruire l'instance Select2 existante si nécessaire
+                if ($(element).data('select2')) {
+                    $(element).select2('destroy');
+                }
+                
+                // Initialiser Select2 avec les options
+                $(element).select2({
+                    language: 'fr',
+                    placeholder: 'Rechercher un médicament...',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $(element).closest('.medicament-form')
+                });
+                
+                console.log("Select2 initialisé avec succès sur:", element.id || element);
+            } catch (e) {
+                console.error("Erreur lors de l'initialisation de Select2:", e);
+            }
         }
         
-        // Initialiser Select2 sur les champs existants
-        $('.select2-field').each(function() {
-            initSelect2(this);
+        // Initialiser Select2 sur tous les champs de médicament existants
+        console.log("Initialisation de Select2 sur les champs existants...");
+        document.querySelectorAll('.select2-field').forEach(function(select) {
+            console.log("Initialisation de Select2 sur:", select.id || select);
+            initSelect2(select);
         });
         
-        // Fonction pour mettre à jour les indices des formulaires ajoutés dynamiquement
+        // Fonction pour mettre à jour les indices des formulaires
         function updateFormIndices() {
             const forms = medicamentForms.querySelectorAll('.medicament-form');
-            forms.forEach((form, index) => {
-                // Mettre à jour les attributs des champs de formulaire
-                form.querySelectorAll('input, select, textarea').forEach(field => {
-                    if (field.name) {
-                        field.name = field.name.replace(/form-\d+/, `form-${index}`);
-                        field.id = field.id.replace(/form-\d+/, `form-${index}`);
-                    }
-                });
-                
-                // Mettre à jour les attributs des labels
-                form.querySelectorAll('label').forEach(label => {
-                    if (label.htmlFor) {
-                        label.htmlFor = label.htmlFor.replace(/form-\d+/, `form-${index}`);
-                    }
-                });
-                
-                // Bouton de suppression
-                const removeButton = form.querySelector('.remove-form');
-                if (removeButton) {
-                    if (index === 0) {
-                        removeButton.classList.add('hidden');
-                    } else {
-                        removeButton.classList.remove('hidden');
-                    }
-                }
-            });
             
             // Mettre à jour le total de formulaires
-            totalFormInput.value = forms.length;
+            managementForm.value = forms.length;
+            console.log(`Nombre de formulaires mis à jour: ${forms.length}`);
+            
+            // Vérifier s'il faut désactiver le bouton "Supprimer" (garder au moins un formulaire)
+            if (forms.length <= 1) {
+                const removeButtons = document.querySelectorAll('.remove-form');
+                removeButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+            } else {
+                const removeButtons = document.querySelectorAll('.remove-form');
+                removeButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+            }
+            
+            // Mettre à jour les indices
+            forms.forEach((form, index) => {
+                // Mettre à jour les attributs des champs
+                form.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name) {
+                        field.name = field.name.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${index}-`);
+                        if (field.id) {
+                            field.id = field.id.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${index}-`);
+                        }
+                    }
+                });
+                
+                // Mettre à jour les labels
+                form.querySelectorAll('label').forEach(label => {
+                    if (label.htmlFor) {
+                        label.htmlFor = label.htmlFor.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${index}-`);
+                    }
+                });
+            });
         }
+        
+        // Initialiser l'état des boutons de suppression
+        updateFormIndices();
         
         // Ajouter un nouveau formulaire de médicament
         addMedicamentButton.addEventListener('click', function() {
-            const formCount = parseInt(totalFormInput.value);
-            const firstForm = medicamentForms.querySelector('.first-form');
+            const formCount = parseInt(managementForm.value);
+            const templateForm = medicamentForms.querySelector('.medicament-form');
             
-            // Cloner le premier formulaire (qui sert de template)
-            const newForm = firstForm.cloneNode(true);
-            newForm.classList.remove('first-form');
+            if (!templateForm) {
+                console.error("Aucun formulaire de médicament n'a été trouvé comme modèle.");
+                return;
+            }
+            
+            // Cloner le premier formulaire
+            const newForm = templateForm.cloneNode(true);
             
             // Réinitialiser les valeurs des champs
             newForm.querySelectorAll('input[type="text"], textarea').forEach(field => {
                 field.value = '';
             });
 
-            // Mettre à jour les noms et IDs pour refléter le nouveau formset index
+            // Désactiver Select2 avant de modifier les IDs
+            newForm.querySelectorAll('.select2-hidden-accessible').forEach(function(el) {
+                if ($(el).data('select2')) {
+                    $(el).select2('destroy');
+                }
+            });
+
+            // Mettre à jour les noms et IDs
             newForm.querySelectorAll('input, select, textarea').forEach(field => {
                 if (field.name) {
-                    field.name = field.name.replace(/form-0/, `form-${formCount}`);
-                    field.id = field.id.replace(/form-0/, `form-${formCount}`);
+                    field.name = field.name.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${formCount}-`);
+                    if (field.id) {
+                        field.id = field.id.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${formCount}-`);
+                    }
                 }
             });
             
-            // Mettre à jour les attributs des labels
+            // Mettre à jour les labels
             newForm.querySelectorAll('label').forEach(label => {
                 if (label.htmlFor) {
-                    label.htmlFor = label.htmlFor.replace(/form-0/, `form-${formCount}`);
+                    label.htmlFor = label.htmlFor.replace(new RegExp(`${FORM_PREFIX}-(\\d+)-`), `${FORM_PREFIX}-${formCount}-`);
                 }
             });
             
@@ -317,51 +442,81 @@
                 select.selectedIndex = 0;
             });
             
-            // S'assurer que le bouton de suppression est visible
-            const removeButton = newForm.querySelector('.remove-form');
-            if (removeButton) {
-                removeButton.classList.remove('hidden');
-            }
-            
-            // Ajouter le nouveau formulaire
-            medicamentForms.appendChild(newForm);
-            
-            // Mettre à jour le total de formulaires
-            totalFormInput.value = formCount + 1;
-            
-            // Détruire les anciens Select2 avant de les réinitialiser
-            newForm.querySelectorAll('.select2-hidden-accessible').forEach(function(el) {
-                $(el).select2('destroy');
+            // Supprimer les éléments Select2 clonés
+            newForm.querySelectorAll('.select2-container').forEach(el => {
+                el.parentNode.removeChild(el);
             });
             
-            // Réinitialiser Select2 sur le nouveau formulaire
+            // Ajouter le nouveau formulaire au DOM
+            medicamentForms.appendChild(newForm);
+            
+            // Réactiver tous les boutons de suppression car maintenant il y a plus d'un formulaire
+            document.querySelectorAll('.remove-form').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            
+            // Mettre à jour le total de formulaires
+            managementForm.value = formCount + 1;
+            
+            // Initialiser Select2 sur le nouveau formulaire
             newForm.querySelectorAll('.select2-field').forEach(function(el) {
                 initSelect2(el);
             });
+            
+            console.log(`Nouveau formulaire ajouté (total: ${managementForm.value})`);
         });
         
         // Supprimer un formulaire de médicament
         medicamentForms.addEventListener('click', function(e) {
             if (e.target.classList.contains('remove-form') || e.target.closest('.remove-form')) {
+                // Ne pas supprimer si c'est le dernier formulaire
+                const allForms = medicamentForms.querySelectorAll('.medicament-form');
+                if (allForms.length <= 1) {
+                    alert("Vous ne pouvez pas supprimer ce médicament car au moins un médicament est requis.");
+                    return;
+                }
+                
                 const form = e.target.closest('.medicament-form');
+                const button = e.target.closest('.remove-form');
+                
+                // Désactiver le bouton pendant le traitement pour éviter les clics multiples
+                button.disabled = true;
                 
                 // Si le formulaire a un id (donc déjà en base), marquer pour suppression
                 const idInput = form.querySelector('input[id$="-id"]');
                 if (idInput && idInput.value) {
-                    const deleteInputId = idInput.id.replace('-id', '-DELETE');
-                    const deleteInput = document.getElementById(deleteInputId);
+                    // Trouver l'élément DELETE correspondant
+                    const formPrefix = idInput.name.match(/^(.+)-id$/)[1];
+                    const deleteInput = document.querySelector(`input[name="${formPrefix}-DELETE"]`);
+                    
                     if (deleteInput) {
                         deleteInput.value = 'on';
                         form.style.display = 'none';
+                        console.log(`Formulaire ${formPrefix} marqué pour suppression`);
+                    } else {
+                        console.error(`Impossible de trouver le champ DELETE pour ${formPrefix}`);
                     }
                 } else {
                     // Sinon, supprimer complètement du DOM
                     form.remove();
+                    console.log("Formulaire supprimé du DOM");
                 }
                 
                 updateFormIndices();
             }
         });
+        
+        // S'assurer que Select2 est correctement initialisé même après le chargement complet de la page
+        setTimeout(function() {
+            console.log("Ré-initialisation de Select2 après délai...");
+            document.querySelectorAll('.select2-field').forEach(function(select) {
+                if (!$(select).data('select2')) {
+                    console.log("Ré-initialisation de Select2 sur:", select.id || select);
+                    initSelect2(select);
+                }
+            });
+        }, 500);
     });
 </script>
 {% endblock %}
