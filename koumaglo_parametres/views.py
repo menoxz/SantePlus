@@ -3,7 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import Medicament, TypeActe, Acte
-from .forms import MedicamentForm, TypeActeForm, ActeForm
+from .forms import MedicamentForm, TypeActeForm, ActeForm, ActeConsultationForm
+from koumaglo_consultations.models import Consultation
 
 # Create your views here.
 
@@ -160,6 +161,39 @@ def acte_add(request):
         form = ActeForm(consultation_id=consultation_id)
     
     return render(request, 'koumaglo_parametres/acte_form.html', {'form': form, 'title': 'Ajouter un acte'})
+
+@login_required
+def acte_affecter_consultation(request):
+    consultation_id = request.GET.get('consultation')
+    
+    if not consultation_id:
+        messages.error(request, 'Consultation non spécifiée.')
+        return redirect('koumaglo_consultations:consultation_list')
+    
+    consultation = get_object_or_404(Consultation, pk=consultation_id)
+    
+    if request.method == 'POST':
+        form = ActeConsultationForm(request.POST, consultation_id=consultation_id)
+        if form.is_valid():
+            acte = form.cleaned_data['acte']
+            # Créer une copie de l'acte pour l'affecter à la consultation
+            nouvel_acte = Acte.objects.create(
+                libelle_acte=acte.libelle_acte,
+                montant_acte=acte.montant_acte,
+                type_acte=acte.type_acte,
+                specialite=acte.specialite,
+                consultation=consultation
+            )
+            messages.success(request, 'Acte affecté à la consultation avec succès.')
+            return redirect('koumaglo_consultations:consultation_detail', pk=consultation_id)
+    else:
+        form = ActeConsultationForm(consultation_id=consultation_id)
+    
+    return render(request, 'koumaglo_parametres/acte_affecter_consultation.html', {
+        'form': form, 
+        'consultation': consultation,
+        'title': 'Affecter un acte à la consultation'
+    })
 
 @login_required
 def acte_edit(request, pk):

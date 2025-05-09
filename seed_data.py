@@ -3,18 +3,18 @@ import django
 import random
 from datetime import datetime, timedelta
 import uuid
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from faker import Faker
 
 # Configuration Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'santeplus.settings')
 django.setup()
 
 # Import après configuration Django
-from faker import Faker
-from django.contrib.auth import get_user_model
-from koumaglo_utilisateurs.models import Utilisateur
-from koumaglo_patients.models import Patient, Personne
-from koumaglo_medecins.models import Medecin, Specialite, AffecterSpecialite
-from koumaglo_parametres.models import TypeActe, Medicament
+from koumaglo_medecins.models import Specialite, Medecin, AffecterSpecialite
+from koumaglo_patients.models import Personne, Patient
+from koumaglo_parametres.models import TypeActe, Medicament, Acte
 from koumaglo_consultations.models import Consultation
 
 Utilisateur = get_user_model()
@@ -127,13 +127,8 @@ def create_types_actes(specialites):
             defaults={"description": acte_data["description"]}
         )
         
-        # Associer aux spécialités
-        for specialite_name in acte_data["specialites"]:
-            try:
-                specialite = Specialite.objects.get(libelle=specialite_name)
-                type_acte.specialites.add(specialite)
-            except Specialite.DoesNotExist:
-                print(f"Spécialité non trouvée: {specialite_name}")
+        # Nous ne gérons plus l'association avec les spécialités au niveau du TypeActe
+        # car la relation existe maintenant directement au niveau de l'Acte
         
         created_types_actes.append(type_acte)
         if created:
@@ -315,6 +310,60 @@ def create_consultations(patients, medecins, admin_user, count=50):
     
     return created_consultations
 
+# Création des actes médicaux
+def create_actes(types_actes, specialites, count=100):
+    created_actes = []
+    montants = [5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000]
+    
+    # Assurons-nous que nous avons des types d'actes et des spécialités
+    if not types_actes or not specialites:
+        print("Impossible de créer des actes : types d'actes ou spécialités manquants")
+        return []
+    
+    actes_data = []
+    # Créer des actes pour chaque type d'acte avec différentes spécialités
+    for type_acte in types_actes:
+        # Créer plusieurs actes pour chaque type d'acte
+        nb_actes = random.randint(2, 5)  # 2 à 5 actes par type
+        for _ in range(nb_actes):
+            # Choisir une spécialité au hasard
+            specialite = random.choice(specialites)
+            
+            # Générer un libellé et un montant
+            libelle = f"{type_acte.libelle} - {specialite.libelle}"
+            montant = random.choice(montants)
+            
+            actes_data.append({
+                "libelle": libelle,
+                "montant": montant,
+                "type_acte": type_acte,
+                "specialite": specialite
+            })
+    
+    # Limiter le nombre d'actes créés si nécessaire
+    if len(actes_data) > count:
+        actes_data = random.sample(actes_data, count)
+    
+    # Créer les actes en base de données
+    for acte_data in actes_data:
+        acte, created = Acte.objects.get_or_create(
+            libelle_acte=acte_data["libelle"],
+            type_acte=acte_data["type_acte"],
+            specialite=acte_data["specialite"],
+            defaults={
+                "montant_acte": acte_data["montant"],
+                "code_acte": f"ACT{uuid.uuid4().hex[:8].upper()}"
+            }
+        )
+        
+        created_actes.append(acte)
+        if created:
+            print(f"Acte créé: {acte.libelle_acte} ({acte.montant_acte} FCFA) - Type: {acte.type_acte.libelle} - Spécialité: {acte.specialite.libelle}")
+        else:
+            print(f"Acte existant: {acte.libelle_acte}")
+    
+    return created_actes
+
 # Fonction principale pour exécuter le seeding
 def run_seeding():
     print("=== Début du seeding de la base de données ===")
@@ -337,6 +386,9 @@ def run_seeding():
     # Créer les types d'actes médicaux
     types_actes = create_types_actes(specialites)
     
+    # Créer les actes médicaux
+    actes = create_actes(types_actes, specialites, count=80)
+    
     # Créer les médicaments
     medicaments = create_medicaments()
     
@@ -355,6 +407,7 @@ def run_seeding():
     print("\n=== Récapitulatif ===")
     print(f"- {len(specialites)} spécialités créées")
     print(f"- {len(types_actes)} types d'actes créés")
+    print(f"- {len(actes)} actes médicaux créés")
     print(f"- {len(medicaments)} médicaments créés")
     print(f"- {len(personnes)} personnes créées")
     print(f"- {len(patients)} patients créés")

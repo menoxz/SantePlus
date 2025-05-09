@@ -3,6 +3,7 @@ from .models import Medicament, TypeActe, Acte
 from koumaglo_medecins.models import Specialite, AffecterSpecialite
 from koumaglo_consultations.models import Consultation
 import uuid
+from django.db import models
 
 class MedicamentForm(forms.ModelForm):
     class Meta:
@@ -40,28 +41,31 @@ class TypeActeForm(forms.ModelForm):
 class ActeForm(forms.ModelForm):
     class Meta:
         model = Acte
-        fields = ['libelle_acte', 'montant_acte', 'type_acte', 'consultation']
+        fields = ['libelle_acte', 'montant_acte', 'type_acte', 'specialite', 'consultation']
         widgets = {
             'libelle_acte': forms.TextInput(attrs={'class': 'form-input'}),
             'montant_acte': forms.NumberInput(attrs={'class': 'form-input'}),
             'type_acte': forms.Select(attrs={'class': 'form-select select2-field'}),
+            'specialite': forms.Select(attrs={'class': 'form-select select2-field'}),
             'consultation': forms.Select(attrs={'class': 'form-select select2-field'}),
         }
         labels = {
             'libelle_acte': 'Libellé de l\'acte',
             'montant_acte': 'Montant',
             'type_acte': 'Type d\'acte',
+            'specialite': 'Spécialité',
             'consultation': 'Consultation'
         }
     
     def __init__(self, *args, **kwargs):
         consultation_id = kwargs.pop('consultation_id', None)
         super().__init__(*args, **kwargs)
+        
         if consultation_id:
             self.fields['consultation'].initial = consultation_id
             self.fields['consultation'].widget = forms.HiddenInput()
             
-            # Filtrer les types d'actes en fonction de la spécialité du médecin de la consultation
+            # Filtrer les actes en fonction de la spécialité du médecin de la consultation
             consultation = Consultation.objects.get(pk=consultation_id)
             medecin = consultation.medecin
             
@@ -69,20 +73,17 @@ class ActeForm(forms.ModelForm):
             specialites_medecin = [affectation.specialite for affectation in 
                                   AffecterSpecialite.objects.filter(medecin=medecin, actif=True)]
             
-            # Filtrer les types d'actes qui sont liés à ces spécialités
-            types_actes_ids = []
-            for specialite in specialites_medecin:
-                types_actes_ids.extend(TypeActe.objects.filter(specialites=specialite).values_list('id', flat=True))
+            # Sélectionner la première spécialité du médecin comme valeur par défaut
+            if specialites_medecin:
+                self.fields['specialite'].initial = specialites_medecin[0]
             
-            # Éliminer les doublons
-            types_actes_ids = list(set(types_actes_ids))
+            # Filtrer les spécialités pour n'afficher que celles du médecin
+            specialites_ids = [specialite.id for specialite in specialites_medecin]
+            self.fields['specialite'].queryset = Specialite.objects.filter(id__in=specialites_ids)
             
-            # Mettre à jour le queryset pour n'afficher que les types d'actes liés aux spécialités du médecin
-            self.fields['type_acte'].queryset = TypeActe.objects.filter(id__in=types_actes_ids)
-            
-            # Si aucun type d'acte n'est disponible pour ce médecin, ajouter un message d'aide
-            if not types_actes_ids:
-                self.fields['type_acte'].help_text = "Aucun type d'acte n'est associé aux spécialités de ce médecin."
+            # Si aucune spécialité n'est disponible pour ce médecin, ajouter un message d'aide
+            if not specialites_ids:
+                self.fields['specialite'].help_text = "Ce médecin n'a aucune spécialité assignée."
         else:
             # Afficher seulement les consultations non facturées
             consultations_non_facturees = Consultation.objects.filter(factures__isnull=True)
@@ -102,3 +103,46 @@ class ActeForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance 
+
+class ActeConsultationForm(forms.Form):
+    acte = forms.ModelChoiceField(
+        queryset=Acte.objects.filter(consultation__isnull=True),
+        widget=forms.Select(attrs={'class': 'form-select select2-field'}),
+        label='Sélectionner un acte',
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        consultation_id = kwargs.pop('consultation_id', None)
+        super().__init__(*args, **kwargs)
+        
+        if consultation_id:
+            # Récupérer la consultation et le médecin
+            from koumaglo_consultations.models import Consultation
+            consultation = Consultation.objects.get(pk=consultation_id)
+            medecin = consultation.medecin
+            
+            # Récupérer les spécialités actives du médecin
+            specialites_medecin = [affectation.specialite for affectation in 
+                                  AffecterSpecialite.objects.filter(medecin=medecin, actif=True)]
+            
+            # Filtrer les actes qui correspondent aux spécialités du médecin
+            specialites_ids = [specialite.id for specialite in specialites_medecin]
+            
+            # N'afficher que les actes qui sont disponibles (non liés à une consultation)
+            actes_disponibles = Acte.objects.filter(consultation__isnull=True)
+            
+            # Si des spécialités sont trouvées, filtrer par spécialité
+            if specialites_ids:
+                # Inclure aussi les actes sans spécialité (null) pour compatibilité avec les données existantes
+                actes_disponibles = actes_disponibles.filter(
+                    models.Q(specialite__id__in=specialites_ids) | 
+                    models.Q(specialite__isnull=True)
+                )
+            
+            self.fields['acte'].queryset = actes_disponibles
+            
+            # Ajouter un message d'aide si aucun acte n'est disponible
+            if not actes_disponibles.exists():
+                self.fields['acte'].help_text = "Aucun acte disponible pour les spécialités de ce médecin. Veuillez créer un nouvel acte."
+                self.fields['acte'].widget.attrs['disabled'] = 'disabled' 

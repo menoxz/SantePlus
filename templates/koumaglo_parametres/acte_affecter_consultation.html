@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold text-gray-800">{{ title }}</h1>
+        <a href="{% url 'koumaglo_consultations:consultation_detail' pk=consultation.pk %}" 
+           class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Retour
+        </a>
+    </div>
+
+    <div class="mb-6 p-4 bg-teal-50 rounded-lg">
+        <h2 class="text-lg font-semibold mb-2 text-teal-700">Détails de la consultation</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Patient</p>
+                <p class="text-gray-800">{{ consultation.patient.personne.nom }} {{ consultation.patient.personne.prenom }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600">Médecin</p>
+                <p class="text-gray-800">{{ consultation.medecin.personne.nom }} {{ consultation.medecin.personne.prenom }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600">Date</p>
+                <p class="text-gray-800">{{ consultation.date_consultation|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600">Code</p>
+                <p class="text-gray-800">{{ consultation.code_consultation }}</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-6">
+            <label for="{{ form.acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ form.acte.label }}
+            </label>
+            {{ form.acte }}
+            {% if form.acte.help_text %}
+                <p class="mt-1 text-sm {% if 'Aucun acte disponible' in form.acte.help_text %}text-amber-600 font-medium{% else %}text-gray-500{% endif %}">
+                    {{ form.acte.help_text }}
+                </p>
+            {% endif %}
+            {% if form.acte.errors %}
+                <div class="mt-1 text-sm text-red-600">
+                    {% for error in form.acte.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-8 flex justify-end">
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300"
+                   {% if form.acte.field.widget.attrs.disabled %}disabled{% endif %}>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Affecter l'acte à la consultation
+            </button>
+        </div>
+    </form>
+
+    <div class="mt-6 border-t pt-6">
+        <h2 class="text-lg font-semibold mb-2 text-gray-800">Vous ne trouvez pas l'acte souhaité ?</h2>
+        <a href="{% url 'koumaglo_parametres:acte_add' %}?consultation={{ consultation.pk }}" 
+            class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Créer un nouvel acte
+        </a>
+    </div>
+</div>
+{% endblock %} 

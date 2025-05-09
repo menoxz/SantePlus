@@ -1,130 +1,143 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-8">
-    <!-- Titre et bouton de retour -->
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 flex items-center">
-            <svg class="w-8 h-8 mr-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path>
+<div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-semibold text-gray-800">{{ title }}</h1>
+        <a href="{% if form.instance.consultation %}{% url 'koumaglo_consultations:consultation_detail' pk=form.instance.consultation.pk %}{% else %}{% url 'koumaglo_parametres:acte_list' %}{% endif %}" 
+           class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
-            {{ title }}
-        </h1>
-        {% if form.consultation.initial %}
-            <a href="{% url 'koumaglo_consultations:consultation_detail' pk=form.consultation.initial %}" 
-               class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300 mt-4 md:mt-0">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Retour à la consultation
-            </a>
-        {% else %}
-            <a href="{% url 'koumaglo_parametres:acte_list' %}" 
-               class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-sm transition duration-300 mt-4 md:mt-0">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Retour à la liste
-            </a>
-        {% endif %}
+            Retour
+        </a>
     </div>
 
-    <!-- Messages -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-lg flex items-center">
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                {{ message }}
+    {% if form.instance.consultation %}
+    <div class="mb-6 p-4 bg-teal-50 rounded-lg">
+        <h2 class="text-lg font-semibold mb-2 text-teal-700">Détails de la consultation</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Patient</p>
+                <p class="text-gray-800">{{ form.instance.consultation.patient.personne.nom }} {{ form.instance.consultation.patient.personne.prenom }}</p>
             </div>
-        {% endfor %}
+            <div>
+                <p class="text-sm font-medium text-gray-600">Médecin</p>
+                <p class="text-gray-800">{{ form.instance.consultation.medecin.personne.nom }} {{ form.instance.consultation.medecin.personne.prenom }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600">Date</p>
+                <p class="text-gray-800">{{ form.instance.consultation.date_consultation|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600">Code</p>
+                <p class="text-gray-800">{{ form.instance.consultation.code_consultation }}</p>
+            </div>
+        </div>
+    </div>
     {% endif %}
 
-    <!-- Formulaire -->
-    <div class="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto">
-        <form method="post" class="space-y-6">
-            {% csrf_token %}
-
-            <!-- Gestion des erreurs globales -->
-            {% if form.non_field_errors %}
-                <div class="p-4 bg-red-100 text-red-700 rounded-lg flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    {{ form.non_field_errors.0 }}
-                </div>
-            {% endif %}
-
-            <!-- Champ Libellé de l'acte -->
-            <div>
-                <label for="{{ form.libelle_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Libellé de l'acte -->
+            <div class="md:col-span-2">
+                <label for="{{ form.libelle_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
                     {{ form.libelle_acte.label }}
                 </label>
-                <input type="text" 
-                       name="{{ form.libelle_acte.name }}" 
-                       id="{{ form.libelle_acte.id_for_label }}" 
-                       value="{{ form.libelle_acte.value|default:'' }}" 
-                       required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 {% if form.libelle_acte.errors %}border-red-500{% endif %}"
-                       placeholder="Entrez le libellé de l'acte">
+                {{ form.libelle_acte }}
                 {% if form.libelle_acte.errors %}
-                    <p class="text-red-600 text-sm mt-1">{{ form.libelle_acte.errors.0 }}</p>
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.libelle_acte.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </div>
-
-            <!-- Champ Montant de l'acte -->
+            
+            <!-- Type d'acte -->
             <div>
-                <label for="{{ form.montant_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                    {{ form.montant_acte.label }}
-                </label>
-                <input type="number" 
-                       name="{{ form.montant_acte.name }}" 
-                       id="{{ form.montant_acte.id_for_label }}" 
-                       value="{{ form.montant_acte.value|default:'' }}" 
-                       required
-                       step="0.01"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 {% if form.montant_acte.errors %}border-red-500{% endif %}"
-                       placeholder="Entrez le montant (ex: 5000)">
-                {% if form.montant_acte.errors %}
-                    <p class="text-red-600 text-sm mt-1">{{ form.montant_acte.errors.0 }}</p>
-                {% endif %}
-            </div>
-
-            <!-- Champ Type de l'acte -->
-            <div>
-                <label for="{{ form.type_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="{{ form.type_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
                     {{ form.type_acte.label }}
                 </label>
-                <select name="{{ form.type_acte.name }}" 
-                        id="{{ form.type_acte.id_for_label }}" 
-                        required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 {% if form.type_acte.errors %}border-red-500{% endif %}">
-                    {% for value, label in form.type_acte.field.choices %}
-                        <option value="{{ value }}" {% if form.type_acte.value == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                {{ form.type_acte }}
                 {% if form.type_acte.help_text %}
-                    <p class="text-amber-600 text-sm mt-1">{{ form.type_acte.help_text }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ form.type_acte.help_text }}</p>
                 {% endif %}
                 {% if form.type_acte.errors %}
-                    <p class="text-red-600 text-sm mt-1">{{ form.type_acte.errors.0 }}</p>
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.type_acte.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </div>
-
-            <!-- Bouton de soumission -->
-            <div class="flex justify-end">
-                <button type="submit" 
-                        class="inline-flex items-center px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    {% if form.instance.pk %}Modifier{% else %}Enregistrer{% endif %}
-                </button>
+            
+            <!-- Spécialité -->
+            <div>
+                <label for="{{ form.specialite.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.specialite.label }}
+                </label>
+                {{ form.specialite }}
+                {% if form.specialite.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.specialite.help_text }}</p>
+                {% endif %}
+                {% if form.specialite.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.specialite.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
-        </form>
-    </div>
+            
+            <!-- Montant -->
+            <div>
+                <label for="{{ form.montant_acte.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.montant_acte.label }}
+                </label>
+                {{ form.montant_acte }}
+                {% if form.montant_acte.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.montant_acte.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if not form.instance.consultation_id %}
+            <!-- Consultation (si pas déjà dans une consultation) -->
+            <div>
+                <label for="{{ form.consultation.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.consultation.label }}
+                </label>
+                {{ form.consultation }}
+                {% if form.consultation.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.consultation.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            {% else %}
+                {{ form.consultation }}
+            {% endif %}
+        </div>
+
+        <div class="mt-8 flex justify-end">
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-sm transition duration-300">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Enregistrer
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}

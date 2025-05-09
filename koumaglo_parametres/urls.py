@@ -21,4 +21,5 @@ urlpatterns = [
     path('actes/ajouter/', views.acte_add, name='acte_add'),
     path('actes/<int:pk>/modifier/', views.acte_edit, name='acte_edit'),
     path('actes/<int:pk>/supprimer/', views.acte_delete, name='acte_delete'),
+    path('actes/affecter-consultation/', views.acte_affecter_consultation, name='acte_affecter_consultation'),
 ] 

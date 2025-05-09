@@ -12,7 +12,7 @@ django.setup()
 # Import des modèles après la configuration Django
 from koumaglo_parametres.models import Medicament, TypeActe, Acte
 from koumaglo_patients.models import Patient, Personne
-from koumaglo_medecins.models import Medecin, Specialite
+from koumaglo_medecins.models import Medecin, Specialite, AffecterSpecialite
 from koumaglo_utilisateurs.models import Utilisateur
 
 def create_sample_data():
@@ -39,11 +39,11 @@ def create_sample_data():
     
     # 2. Créer 5 types d'actes
     types_actes = [
-        {"libelle": "Consultation standard", "description": "Consultation médicale de routine", "montant_defaut": 10000},
-        {"libelle": "Consultation spécialiste", "description": "Consultation avec un médecin spécialiste", "montant_defaut": 15000},
-        {"libelle": "Acte chirurgical mineur", "description": "Petite intervention chirurgicale", "montant_defaut": 25000},
-        {"libelle": "Imagerie médicale", "description": "Radiographie, échographie, etc.", "montant_defaut": 20000},
-        {"libelle": "Analyse biologique", "description": "Prise de sang, analyse d'urine, etc.", "montant_defaut": 8000}
+        {"libelle": "Consultation standard", "description": "Consultation médicale de routine"},
+        {"libelle": "Consultation spécialiste", "description": "Consultation avec un médecin spécialiste"},
+        {"libelle": "Acte chirurgical mineur", "description": "Petite intervention chirurgicale"},
+        {"libelle": "Imagerie médicale", "description": "Radiographie, échographie, etc."},
+        {"libelle": "Analyse biologique", "description": "Prise de sang, analyse d'urine, etc."}
     ]
     
     for ta_data in types_actes:
@@ -51,7 +51,6 @@ def create_sample_data():
             libelle=ta_data["libelle"],
             defaults={
                 "description": ta_data["description"],
-                "montant_defaut": ta_data["montant_defaut"],
                 "code": f"TYP{uuid.uuid4().hex[:8].upper()}"
             }
         )
@@ -60,22 +59,25 @@ def create_sample_data():
     # 3. Créer 5 actes médicaux
     actes = []
     types_actes = TypeActe.objects.all()[:5]
+    specialites = Specialite.objects.all()[:5]
     
     actes_data = [
-        {"libelle": "Consultation généraliste", "montant": 10000, "type_acte_index": 0},
-        {"libelle": "Consultation cardiologue", "montant": 18000, "type_acte_index": 1},
-        {"libelle": "Pansement simple", "montant": 5000, "type_acte_index": 2},
-        {"libelle": "Échographie abdominale", "montant": 25000, "type_acte_index": 3},
-        {"libelle": "Numération formule sanguine", "montant": 7500, "type_acte_index": 4}
+        {"libelle": "Consultation généraliste", "montant": 10000, "type_acte_index": 0, "specialite_index": 0},
+        {"libelle": "Consultation cardiologue", "montant": 18000, "type_acte_index": 1, "specialite_index": 1},
+        {"libelle": "Pansement simple", "montant": 5000, "type_acte_index": 2, "specialite_index": 2},
+        {"libelle": "Échographie abdominale", "montant": 25000, "type_acte_index": 3, "specialite_index": 3},
+        {"libelle": "Numération formule sanguine", "montant": 7500, "type_acte_index": 4, "specialite_index": 4}
     ]
     
     for acte_data in actes_data:
-        if types_actes.count() > acte_data["type_acte_index"]:
+        if (types_actes.count() > acte_data["type_acte_index"] and 
+            specialites.count() > acte_data["specialite_index"]):
             Acte.objects.get_or_create(
                 libelle_acte=acte_data["libelle"],
                 defaults={
                     "montant_acte": acte_data["montant"],
                     "type_acte": types_actes[acte_data["type_acte_index"]],
+                    "specialite": specialites[acte_data["specialite_index"]],
                     "code_acte": f"ACT{uuid.uuid4().hex[:8].upper()}"
                 }
             )
@@ -156,9 +158,15 @@ def create_sample_data():
                 titre_medecin=med_data["titre"]
             )
             
-            # Associer à la spécialité
+            # Associer à la spécialité via AffecterSpecialite
             if len(specialites) > med_data["specialite_index"]:
-                medecin.specialites.add(specialites[med_data["specialite_index"]])
+                specialite = specialites[med_data["specialite_index"]]
+                AffecterSpecialite.objects.create(
+                    medecin=medecin,
+                    specialite=specialite,
+                    date_affectation=timezone.now(),
+                    actif=True
+                )
     
     print("✅ 5 médecins créés")
     print("\nToutes les données d'exemple ont été créées avec succès!")

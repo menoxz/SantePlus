@@ -31,7 +31,6 @@ class TypeActe(models.Model):
     description = models.TextField(blank=True, null=True)
     date_creation = models.DateTimeField(default=timezone.now)
     date_modification = models.DateTimeField(auto_now=True)
-    specialites = models.ManyToManyField(Specialite, related_name='types_actes', blank=True)
 
     class Meta:
         ordering = ['libelle']
@@ -51,6 +50,7 @@ class Acte(models.Model):
     libelle_acte = models.CharField(max_length=100)
     montant_acte = models.DecimalField(max_digits=10, decimal_places=2)
     type_acte = models.ForeignKey(TypeActe, on_delete=models.CASCADE, related_name='actes')
+    specialite = models.ForeignKey('koumaglo_medecins.Specialite', on_delete=models.CASCADE, related_name='actes', null=True)
     consultation = models.ForeignKey('koumaglo_consultations.Consultation', on_delete=models.CASCADE, related_name='actes', null=True, blank=True)
 
     class Meta:
